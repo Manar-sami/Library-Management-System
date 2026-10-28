@@ -639,9 +639,82 @@ private void SearchMemberByMembershipId()
     }
 }
 
+// داله لعرض بيانات العضو وسجل استعاراته.
 private void ViewMemberDetailsAndLoanHistory()
+{
+    Console.Write("Enter Membership ID: ");
+    if (!int.TryParse(Console.ReadLine(), out int membershipId))
     {
-        
+        Console.WriteLine("Invalid Membership ID!");
+        return;
     }
+
+    Member member = null;
+
+    foreach (Person p in person)
+    {
+        if (p is Member m && m.MembershipId == membershipId)
+        {
+            member = m;
+            break;
+        }
+    }
+
+    if (member == null)
+    {
+        Console.WriteLine("Member not found!");
+        return;
+    }
+
+    Console.WriteLine("===== Member Details =====");
+    Console.WriteLine($"ID: {member.Id}");
+    Console.WriteLine($"Name: {member.Name}");
+    Console.WriteLine($"Membership ID: {member.MembershipId}");
+    Console.WriteLine($"Phone Number: {member.PhoneNumber}");
+    Console.WriteLine($"Address: {member.Address}");
+    Console.WriteLine($"Maximum Loan Limit: {member.MaxLoanLimit}");
+
+    Console.WriteLine("===== Loan History =====");
+
+    bool hasLoans = false;
+
+    foreach (Loan loan in loans)
+    {
+        if (loan.MemberId == member.Id)
+        {
+            hasLoans = true;
+
+            LibraryItem item = null;
+
+            foreach (LibraryItem i in items)
+            {
+                if (i.Id == loan.ItemId)
+                {
+                    item = i;
+                    break;
+                }
+            }
+
+            Console.WriteLine("------------------------");
+            Console.WriteLine($"Item ID: {loan.ItemId}");
+            Console.WriteLine($"Title: {item?.Title ?? "Item no longer exists"}");
+            Console.WriteLine($"Loan Date: {loan.LoanDate}");
+            Console.WriteLine($"Expected Return Date: {loan.ExpectedReturnDate}");
+
+            if (loan.ActualReturnDate.HasValue)
+                Console.WriteLine($"Actual Return Date: {loan.ActualReturnDate.Value}");
+            else
+                Console.WriteLine("Status: Currently Borrowed");
+
+            Console.WriteLine($"Fine Amount: {loan.FineAmount}");
+        }
+    }
+
+    if (!hasLoans)
+    {
+        Console.WriteLine("This member has no loan history.");
+    }
+}
+
 }
 

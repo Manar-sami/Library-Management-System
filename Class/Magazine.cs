@@ -12,12 +12,12 @@ public class Magazine : LibraryItem
 
     public override decimal CalculateLateFee()
 {
-    return 2m;
+    return 4m;
 }
 
 public override int GetLoanPeriod()
 {
-    return 7;
+    return 5;
 }
 
 public override string ToString()

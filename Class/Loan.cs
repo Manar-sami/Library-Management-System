@@ -6,8 +6,9 @@ public class Loan
     public DateOnly ExpectedReturnDate { get; set; }
     public DateOnly? ActualReturnDate { get; set; }
     public decimal FineAmount { get; set; }
+    public decimal FinePaidAmount { get; set; }
 
-    public Loan(int memberId, int itemId, DateOnly loanDate,DateOnly expectedReturnDate)
+    public Loan(int memberId, int itemId, DateOnly loanDate, DateOnly expectedReturnDate)
     {
         MemberId = memberId;
         ItemId = itemId;
@@ -15,5 +16,6 @@ public class Loan
         ExpectedReturnDate = expectedReturnDate;
         ActualReturnDate = null;
         FineAmount = 0;
+        FinePaidAmount = 0;
     }
 }

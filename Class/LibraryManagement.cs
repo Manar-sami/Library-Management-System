@@ -7,6 +7,8 @@ public class LibraryManagement
     List<Person> person;
     List<LibraryItem> items;
     List<Loan> loans = new List<Loan>();
+    List<FinePayment> payments = new List<FinePayment>();
+private int nextPaymentId = 1;
 private int nextId = 3;
     public LibraryManagement()
     {
@@ -21,7 +23,8 @@ private int nextId = 3;
             PhoneNumber = "0567070911",
             Address = "Nablus",
             MembershipId = 101,
-            MaxLoanLimit=5
+            MaxLoanLimit=5,
+            IsActive=true,
         },
 
         new Librarian()
@@ -186,9 +189,13 @@ private int nextId = 3;
             Console.WriteLine("4. View Member Details and Loan History");
             Console.WriteLine("5. Set Maximum Loan Limit");
             Console.WriteLine("6. Deactivate Member");
-            Console.WriteLine("7.Logout");
+             Console.WriteLine("7.Borrow Item");
+             Console.WriteLine("8. Return Item");
+             Console.WriteLine("9. Pay Fine");
 
-            Console.WriteLine("Please choose an option (1-7): ");
+            
+
+            Console.WriteLine("Please choose an option (1-9): ");
             choice = int.Parse(Console.ReadLine());
             switch (choice)
             {
@@ -197,11 +204,15 @@ private int nextId = 3;
                  case 3:SearchMemberByMembershipId();break;
                  case 4: ViewMemberDetailsAndLoanHistory();break;
                  case 5:SetMaximumLoanLimit();break;
-                case 7: Run(); break;
+                 case 6:DeactivateMember();break;
+                case 7: BorrowItem();break;
+                
+                case 8:ReturnItem();break;
+                case 9: PayFine(); break;
                 default:Console.WriteLine("wrong choice");break;
             }
 
-        } while (choice !=7);
+        } while (choice !=8);
     }
 
 
@@ -584,7 +595,7 @@ if (exists)
          int maxLoanLimit=int.Parse(Console.ReadLine());
 
 
-         Member member = new Member(id,name,password,phoneNumber,address,membershipId,maxLoanLimit);
+         Member member = new Member(id,name,password,phoneNumber,address,membershipId,maxLoanLimit,true);
 
 person.Add(member);
 
@@ -702,10 +713,17 @@ private void ViewMemberDetailsAndLoanHistory()
             Console.WriteLine($"Loan Date: {loan.LoanDate}");
             Console.WriteLine($"Expected Return Date: {loan.ExpectedReturnDate}");
 
-            if (loan.ActualReturnDate.HasValue)
-                Console.WriteLine($"Actual Return Date: {loan.ActualReturnDate.Value}");
-            else
-                Console.WriteLine("Status: Currently Borrowed");
+            
+if (loan.ActualReturnDate.HasValue)
+{
+    Console.WriteLine($"Actual Return Date: {loan.ActualReturnDate.Value}");
+    Console.WriteLine("Status: Returned");
+}
+else
+{
+    Console.WriteLine("Status: Currently Borrowed");
+}
+
 
             Console.WriteLine($"Fine Amount: {loan.FineAmount}");
         }
@@ -759,6 +777,327 @@ private void SetMaximumLoanLimit()
 
     Console.WriteLine(
         $"Maximum loan limit for {member.Name} updated to {member.MaxLoanLimit}.");
+}
+
+
+
+private void DeactivateMember()
+{
+    Console.Write("Enter Membership ID: ");
+    int membershipId = int.Parse(Console.ReadLine());
+
+    Member member = null;
+
+    foreach (Person p in person)
+    {
+        if (p is Member m && m.MembershipId == membershipId)
+        {
+            member = m;
+            break;
+        }
+    }
+
+    if (member == null)
+    {
+        Console.WriteLine("Member not found!");
+        return;
+    }
+
+    if (!member.IsActive)
+    {
+        Console.WriteLine("Membership is already deactivated!");
+        return;
+    }
+
+    member.IsActive = false;
+
+    Console.WriteLine("Membership deactivated successfully!");
+}
+
+
+
+
+
+private void BorrowItem()
+{
+    Console.WriteLine("Enter Membership ID:");
+    int membershipId = int.Parse(Console.ReadLine());
+
+    Member member = null;
+
+    foreach (Person p in person)
+    {
+        if (p is Member m && m.MembershipId == membershipId)
+        {
+            member = m;
+            break;
+        }
+    }
+
+    if (member == null)
+    {
+        Console.WriteLine("Member not found!");
+        return;
+    }
+
+    if (!member.IsActive)
+    {
+        Console.WriteLine("This membership is deactivated!");
+        return;
+    }
+
+    decimal unpaidFines = 0;
+
+    foreach (Loan loan in loans)
+    {
+        if (loan.MemberId == member.Id)
+        {
+            unpaidFines += loan.FineAmount - loan.FinePaidAmount;
+        }
+    }
+
+    if (unpaidFines > 0)
+    {
+        Console.WriteLine($"Unpaid fines: {unpaidFines}");
+        Console.WriteLine("Please pay your fines before borrowing.");
+        return;
+    }
+
+    int currentLoans = 0;
+
+    foreach (Loan loan in loans)
+    {
+        if (loan.MemberId == member.Id &&
+            loan.ActualReturnDate == null)
+        {
+            currentLoans++;
+        }
+    }
+
+    if (currentLoans >= member.MaxLoanLimit)
+    {
+        Console.WriteLine("Maximum loan limit reached!");
+        return;
+    }
+
+    Console.WriteLine("Enter Item ID:");
+    int itemId = int.Parse(Console.ReadLine());
+
+    LibraryItem selectedItem = null;
+
+    foreach (LibraryItem item in items)
+    {
+        if (item.Id == itemId)
+        {
+            selectedItem = item;
+            break;
+        }
+    }
+
+    if (selectedItem == null)
+    {
+        Console.WriteLine("Item not found!");
+        return;
+    }
+
+    if (!selectedItem.IsActive)
+    {
+        Console.WriteLine("This item is deactivated!");
+        return;
+    }
+
+    if (!selectedItem.IsAvailable)
+    {
+        Console.WriteLine("This item is already borrowed!");
+        return;
+    }
+
+    DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+
+    DateOnly expectedReturnDate =
+        today.AddDays(selectedItem.GetLoanPeriod());
+
+    Loan newLoan = new Loan(
+        member.Id,
+        selectedItem.Id,
+        today,
+        expectedReturnDate
+    );
+
+    loans.Add(newLoan);
+    selectedItem.IsAvailable = false;
+
+    Console.WriteLine("Item borrowed successfully!");
+    Console.WriteLine($"Member: {member.Name}");
+    Console.WriteLine($"Item: {selectedItem.Title}");
+    Console.WriteLine($"Loan Date: {today}");
+    Console.WriteLine($"Expected Return Date: {expectedReturnDate}");
+}
+
+
+
+private void ReturnItem()
+{
+    Console.WriteLine("Enter Membership ID:");
+    int membershipId = int.Parse(Console.ReadLine());
+
+    Member member = null;
+
+    foreach (Person p in person)
+    {
+        if (p is Member m && m.MembershipId == membershipId)
+        {
+            member = m;
+            break;
+        }
+    }
+
+    if (member == null)
+    {
+        Console.WriteLine("Member not found!");
+        return;
+    }
+
+    Console.WriteLine("Enter Item ID:");
+    int itemId = int.Parse(Console.ReadLine());
+
+    Loan selectedLoan = null;
+
+    foreach (Loan loan in loans)
+    {
+        if (loan.MemberId == member.Id &&
+            loan.ItemId == itemId &&
+            loan.ActualReturnDate == null)
+        {
+            selectedLoan = loan;
+            break;
+        }
+    }
+
+    if (selectedLoan == null)
+    {
+        Console.WriteLine("No active loan found for this member and item!");
+        return;
+    }
+
+    LibraryItem selectedItem = null;
+
+    foreach (LibraryItem item in items)
+    {
+        if (item.Id == itemId)
+        {
+            selectedItem = item;
+            break;
+        }
+    }
+
+    if (selectedItem == null)
+    {
+        Console.WriteLine("Item not found!");
+        return;
+    }
+
+    DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+
+    selectedLoan.ActualReturnDate = today;
+
+    int lateDays = today.DayNumber -
+                   selectedLoan.ExpectedReturnDate.DayNumber;
+
+    if (lateDays > 0)
+    {
+        selectedLoan.FineAmount =
+            lateDays * selectedItem.CalculateLateFee();
+    }
+
+    selectedItem.IsAvailable = true;
+
+    Console.WriteLine("Item returned successfully!");
+    Console.WriteLine($"Item: {selectedItem.Title}");
+    Console.WriteLine($"Return Date: {today}");
+    Console.WriteLine($"Late Days: {Math.Max(0, lateDays)}");
+    Console.WriteLine($"Fine Amount: {selectedLoan.FineAmount}");
+}
+
+
+private void PayFine()
+{
+    Console.Write("Enter Membership ID: ");
+    int membershipId = int.Parse(Console.ReadLine());
+
+    Member member = null;
+
+    foreach (Person p in person)
+    {
+        if (p is Member m && m.MembershipId == membershipId)
+        {
+            member = m;
+            break;
+        }
+    }
+
+    if (member == null)
+    {
+        Console.WriteLine("Member not found!");
+        return;
+    }
+
+    Console.Write("Enter Item ID: ");
+    int itemId = int.Parse(Console.ReadLine());
+
+    Loan selectedLoan = null;
+
+    foreach (Loan loan in loans)
+    {
+        if (loan.MemberId == member.Id &&
+            loan.ItemId == itemId &&
+            loan.FineAmount > loan.FinePaidAmount)
+        {
+            selectedLoan = loan;
+            break;
+        }
+    }
+
+    if (selectedLoan == null)
+    {
+        Console.WriteLine("No unpaid fine found for this item!");
+        return;
+    }
+
+    decimal remaining =
+        selectedLoan.FineAmount - selectedLoan.FinePaidAmount;
+
+    Console.WriteLine($"Total Fine: {selectedLoan.FineAmount}");
+    Console.WriteLine($"Already Paid: {selectedLoan.FinePaidAmount}");
+    Console.WriteLine($"Remaining: {remaining}");
+
+    Console.Write("Enter payment amount: ");
+    decimal amount = decimal.Parse(Console.ReadLine());
+
+    if (amount <= 0 || amount > remaining)
+    {
+        Console.WriteLine("Invalid payment amount!");
+        return;
+    }
+
+    DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+
+    FinePayment payment = new FinePayment(
+        nextPaymentId++,
+        member.Id,
+        itemId,
+        amount,
+        today
+    );
+
+    payments.Add(payment);
+    selectedLoan.FinePaidAmount += amount;
+
+    Console.WriteLine("Payment recorded successfully!");
+    Console.WriteLine($"Payment ID: {payment.PaymentId}");
+    Console.WriteLine($"Amount Paid: {amount}");
+    Console.WriteLine(
+        $"Remaining Fine: {selectedLoan.FineAmount - selectedLoan.FinePaidAmount}");
 }
 
 }

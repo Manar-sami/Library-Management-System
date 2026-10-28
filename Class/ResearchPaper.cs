@@ -16,12 +16,12 @@ public class ResearchPaper : LibraryItem
 
     public override decimal CalculateLateFee()
 {
-    return 2m;
+    return 3m;
 }
 
 public override int GetLoanPeriod()
 {
-    return 7;
+    return 6;
 }
 
 public override string ToString()

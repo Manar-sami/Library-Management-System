@@ -196,6 +196,7 @@ private int nextId = 3;
                  case 2:ShowAllMembers();break;
                  case 3:SearchMemberByMembershipId();break;
                  case 4: ViewMemberDetailsAndLoanHistory();break;
+                 case 5:SetMaximumLoanLimit();break;
                 case 7: Run(); break;
                 default:Console.WriteLine("wrong choice");break;
             }
@@ -714,6 +715,50 @@ private void ViewMemberDetailsAndLoanHistory()
     {
         Console.WriteLine("This member has no loan history.");
     }
+}
+
+
+
+private void SetMaximumLoanLimit()
+{
+    Console.Write("Enter Membership ID: ");
+     int membershipId = int.Parse(Console.ReadLine());
+    if (membershipId <= 0 )
+    {
+        Console.WriteLine("Invalid Membership ID!");
+        return;
+    }
+
+    Member member = null;
+
+    foreach (Person p in person)
+    {
+        if (p is Member m && m.MembershipId == membershipId)
+        {
+            member = m;
+            break;
+        }
+    }
+
+    if (member == null)
+    {
+        Console.WriteLine("Member not found!");
+        return;
+    }
+
+    Console.Write("Enter the new maximum loan limit: ");
+     int limit=int.Parse(Console.ReadLine());
+
+    if ( limit < 1)
+    {
+        Console.WriteLine("The limit must be a positive number!");
+        return;
+    }
+
+    member.MaxLoanLimit = limit;
+
+    Console.WriteLine(
+        $"Maximum loan limit for {member.Name} updated to {member.MaxLoanLimit}.");
 }
 
 }
